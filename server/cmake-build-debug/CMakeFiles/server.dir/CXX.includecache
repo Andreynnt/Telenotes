@@ -89,6 +89,8 @@ mime_types.hpp
 /home/andreynt/park/C/Telenotes/server/reply/mime_types.hpp
 string
 -
+map
+-
 
 /home/andreynt/park/C/Telenotes/server/reply/reply.cpp
 reply.hpp
@@ -123,6 +125,12 @@ header.hpp
 /home/andreynt/park/C/Telenotes/server/request/request_handler.cpp
 request_handler.hpp
 /home/andreynt/park/C/Telenotes/server/request/request_handler.hpp
+../reply/mime_types.hpp
+/home/andreynt/park/C/Telenotes/server/reply/mime_types.hpp
+../reply/reply.hpp
+/home/andreynt/park/C/Telenotes/server/reply/reply.hpp
+request.hpp
+/home/andreynt/park/C/Telenotes/server/request/request.hpp
 fstream
 -
 sstream
@@ -133,12 +141,6 @@ boost/lexical_cast.hpp
 -
 iostream
 -
-../reply/mime_types.hpp
-/home/andreynt/park/C/Telenotes/server/reply/mime_types.hpp
-../reply/reply.hpp
-/home/andreynt/park/C/Telenotes/server/reply/reply.hpp
-request.hpp
-/home/andreynt/park/C/Telenotes/server/request/request.hpp
 
 /home/andreynt/park/C/Telenotes/server/request/request_handler.hpp
 string

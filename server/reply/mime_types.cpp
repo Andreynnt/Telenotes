@@ -3,25 +3,22 @@
 namespace http {
     namespace mime_types {
 
-        struct mapping {
-            const char* extension;
-            const char* mime_type;
-        } mappings[] = {
+        std::map<std::string, std::string> mime_type {
+                { "json", "application/json" },
                 { "gif", "image/gif" },
                 { "htm", "text/html" },
                 { "html", "text/html" },
                 { "jpg", "image/jpeg" },
                 { "png", "image/png" },
-                { "json", "application/json"}
         };
 
         std::string extension_to_type(const std::string& extension) {
-            for (mapping* m = mappings; m->extension; ++m) {
-                if (m->extension == extension) {
-                    return m->mime_type;
-                }
-            }
-            return "text/plain";
+           if (mime_type.count(extension) ) {
+               return mime_type[extension];
+           } else {
+               std::string plain("text/plain");
+               return plain;
+           }
         }
     }
 }

@@ -1,12 +1,13 @@
 #include "request_handler.hpp"
+#include "../reply/mime_types.hpp"
+#include "../reply/reply.hpp"
+#include "request.hpp"
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
-#include "../reply/mime_types.hpp"
-#include "../reply/reply.hpp"
-#include "request.hpp"
+
 
 namespace http {
 
