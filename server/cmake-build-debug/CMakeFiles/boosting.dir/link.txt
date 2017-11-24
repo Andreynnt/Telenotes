@@ -1,0 +1,1 @@
+/usr/bin/c++   -pthread -g   CMakeFiles/boosting.dir/main.cpp.o CMakeFiles/boosting.dir/core/server.cpp.o CMakeFiles/boosting.dir/core/connection.cpp.o CMakeFiles/boosting.dir/request/request_handler.cpp.o CMakeFiles/boosting.dir/request/request_parser.cpp.o CMakeFiles/boosting.dir/reply/mime_types.cpp.o CMakeFiles/boosting.dir/reply/reply.cpp.o  -o boosting 
