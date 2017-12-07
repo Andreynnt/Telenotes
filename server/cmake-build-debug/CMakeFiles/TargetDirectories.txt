@@ -1,4 +1,0 @@
-/home/andreynt/park/C/Telenotes/server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/andreynt/park/C/Telenotes/server/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/andreynt/park/C/Telenotes/server/cmake-build-debug/CMakeFiles/boosting.dir
-/home/andreynt/park/C/Telenotes/server/cmake-build-debug/CMakeFiles/server.dir
