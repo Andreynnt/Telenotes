@@ -20,6 +20,5 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 
 add_executable(server ${SOURCE_FILES})
-
 add_executable(boosting ${SOURCE_FILES})
 target_link_libraries (server ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES})
