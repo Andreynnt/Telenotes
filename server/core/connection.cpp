@@ -41,19 +41,36 @@ namespace http {
             //tie создает кортеж с неконстантыми ссылками
             boost::tie(result, boost::tuples::ignore) = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_transferred);
 
-            print_buffer(bytes_transferred);
+            std::string my_string(buffer_.data(), buffer_.data() + bytes_transferred);
+
+            setContent(my_string);
+            std::cout << getContent() << std::endl;
+
+            Controller controller;
+            controller.parseJSON(getContent());
+            // std::cout << "GET ID:" << controller.getID() << std::endl;
+            // std::cout << "TEXT IS: " << controller.returnText() << std::endl;
+
+
+            controller.bd.connectDB();
+            controller.bd.authorizeUser();
+
+            controller.bd.insertQuery("First note from telegram", const_cast<char*>(controller.returnText().c_str()), "");
+            std::string out;
+            out = controller.bd.selectAllQuery();
+            std::cout << "from bd with love: " << std::endl;
+            std::cout<<out;
+            std::cout<<controller.bd.selectByNameQuery("First note from telegram");
+
+
 
             if (result) {
                 request_handler_.handle_request(request_, reply_);
                 boost::asio::async_write(socket_, reply_.to_buffers(),
                                          strand_.wrap(boost::bind(&connection::handle_write, shared_from_this(),
                                                                   boost::asio::placeholders::error)));
-
-
-
-                std::cout << "Reply content:\n" << std::endl;
-                std::cout << reply_.get_content() << std::endl;
             }
+
             else if (!result) {
                 reply_ = reply::stock_reply(reply::bad_request);
                 boost::asio::async_write(socket_, reply_.to_buffers(),
@@ -75,6 +92,7 @@ namespace http {
         // Деструктор connection закрывает сокет.
     }
 
+
     void connection::handle_write(const boost::system::error_code& e) {
         if (!e) {
             boost::system::error_code ignored_ec;
@@ -82,4 +100,16 @@ namespace http {
         }
     }
 
+
+    std::string connection::getContent() {
+        return content;
+    }
+
+
+    void connection::setContent(const std::string& str) {
+        size_t pos = str.find('{');
+        content = str.substr(pos, std::string::npos);
+    }
+
 }
+
