@@ -9,6 +9,9 @@
 #include "../request/request.hpp"
 #include "../request/request_handler.hpp"
 #include "../request/request_parser.hpp"
+
+#include "../controll/controller.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
@@ -30,8 +33,12 @@ namespace http {
 
         /// Запуск асинхронной операции соедиения
         void start();
+        std::string getContent();
 
     private:
+        void setContent(const std::string& str);
+
+
         /// Обработка завершения операции чтения
         void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
 
@@ -60,6 +67,8 @@ namespace http {
 
         /// Ответ для клиента
         reply reply_;
+
+        std::string content;
     };
 
     typedef boost::shared_ptr<connection> connection_ptr;
