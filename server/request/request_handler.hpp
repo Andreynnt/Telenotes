@@ -15,7 +15,7 @@ namespace http {
             explicit request_handler(const std::string& doc_root);
 
             /// Обрабатка запроса и отдача ответа
-            void handle_request(const request& req, reply& rep);
+            void handle_request(const request& req, reply& rep, const std::string& answer);
 
         private:
             /// Дирректория с файлами для отдачи

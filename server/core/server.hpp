@@ -8,11 +8,13 @@
 
 #include "connection.hpp"
 #include "../request/request_handler.hpp"
+#include "queue.hpp"
 #include <boost/asio.hpp>
 #include <string>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
 
 namespace http {
 
@@ -52,6 +54,9 @@ namespace http {
 
         /// Обработчик входящих запросов
         request_handler request_handler_;
+
+        Queue clientsQueue;
+
     };
 }
 

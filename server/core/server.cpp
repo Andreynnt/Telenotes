@@ -57,7 +57,7 @@ namespace http {
     }
 
     void server::start_accept() {
-        new_connection_.reset(new connection(io_service_, request_handler_));
+        new_connection_.reset(new connection(io_service_, request_handler_, clientsQueue));
         acceptor_.async_accept(new_connection_->socket(), boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
     }
 

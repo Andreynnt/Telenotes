@@ -40,8 +40,7 @@ void masterScript(){
 
 }
 
-DBConnector::DBConnector(int userid1){
-    user_id = userid1;
+DBConnector::DBConnector(){
     QSqlDatabase newConnector;
     db_connector = newConnector;
 }
@@ -65,8 +64,8 @@ bool DBConnector::connectDB(){
     return true;
 }
 
-void DBConnector::authorizeUser(){
-    if(checkConnection()){
+void DBConnector::authorizeUser() {
+    if(checkConnection()) {
         QSqlQuery query(db_connector);
         query.prepare(
                 "SELECT * FROM users WHERE user_id=:userid;"
@@ -98,16 +97,18 @@ bool DBConnector::checkConnection(){//checking the connection. If smth is wrong 
     return true;
 }
 
-void DBConnector::insertQuery(char* note_name, char* note_text, char* note_tags){
-    if(checkConnection()){
+void DBConnector::insertQuery(const std::string& note_name, const std::string& note_text, const std::string& note_tags) {
+    if(checkConnection()) {
         QSqlQuery query(db_connector);
         QDate date = QDate::currentDate();
 
         query.prepare("INSERT INTO notes VALUES(:usrid, :name, :note, :tags, :date);");
         query.bindValue( ":usrid", user_id );
-        query.bindValue( ":name", note_name );
-        query.bindValue( ":note", note_text);
-        query.bindValue( ":tags", note_tags);
+        query.bindValue( ":name", note_name.c_str());
+        query.bindValue( ":note", note_text.c_str());
+
+
+        query.bindValue( ":tags", note_tags.c_str());
         query.bindValue(":date",date);
         if( !query.exec() ){
             qDebug() <<"Insert error"<<query.lastError().text();
@@ -115,25 +116,26 @@ void DBConnector::insertQuery(char* note_name, char* note_text, char* note_tags)
     }
 }
 
-std::string DBConnector::selectByNameQuery( char* note_name){
-    if(checkConnection()){
+std::string DBConnector::selectByNameQuery(const std::string& note_name) {
+    if (checkConnection()){
         std::string savedNote;
         QSqlQuery query(db_connector);
 
         query.prepare(
                 "SELECT * FROM notes WHERE user_id=:userid AND note_name=:name;"
         );
-        query.bindValue( ":name", note_name );
+        query.bindValue( ":name", note_name.c_str() );
         query.bindValue( ":userid", user_id );
         if( !query.exec() ){
             qDebug() <<"Select err"<<db_connector.lastError().text();
         }
         while( query.next() ) {
+            savedNote += "Note's name: ";
             savedNote += query.value(1).toString().toStdString();
-            savedNote += "\n\n";
+            savedNote += "\n\nText:\n";
             savedNote += query.value(2).toString().toStdString();
-            savedNote += "\n TAGS: \n";
-            savedNote += query.value(3).toString().toStdString();
+            // savedNote += "\n TAGS: \n";
+            // savedNote += query.value(3).toString().toStdString();
             savedNote += "\n";
         }
         return savedNote;
@@ -150,16 +152,36 @@ std::string DBConnector::selectAllQuery(){
                 "SELECT note_name FROM notes WHERE user_id=:userid;"
         );
         query.bindValue(":userid",user_id);
-        if( !query.exec() ){
+        if( !query.exec() ) {
             qDebug() <<"Select err"<<db_connector.lastError().text();
         }
         std::string names;
+
+        int noteNumber = 1;
         while( query.next() ) {
-            std::string name = query.value(0).toString().toStdString();
+            std::string name = std::to_string(noteNumber);
+            name += ". ";
+            name += query.value(0).toString().toStdString();
             names += name;
-            names += ", ";
+            names += "\n";
+            noteNumber++;
         }
         names += "\n\n";
         return names;
+    }
+}
+
+
+void DBConnector::deleteByName(const std::string& note_name){
+    if(checkConnection()){
+        QSqlQuery query(db_connector);
+
+        query.prepare("DELETE FROM notes WHERE note_name = :note_name");
+        query.bindValue( ":note_name", note_name.c_str());
+
+        if( !query.exec() ){
+            qDebug() <<"Delete error"<<query.lastError().text();
+        }
+
     }
 }

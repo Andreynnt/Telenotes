@@ -1,6 +1,3 @@
-//
-// Created by andreynt on 24.11.17.
-//
 
 #include "../request/request_handler.hpp"
 #include "connection.hpp"
@@ -10,16 +7,19 @@
 
 namespace http {
 
-    connection::connection(boost::asio::io_service& io_service, request_handler& handler)
+    connection::connection(boost::asio::io_service& io_service, request_handler& handler, Queue& clientsQueue)
             : strand_(io_service),
               socket_(io_service),
-              request_handler_(handler)
+              request_handler_(handler),
+              clientsQueue(clientsQueue)
     {
     }
+
 
     boost::asio::ip::tcp::socket& connection::socket() {
         return socket_;
     }
+
 
     void connection::start() {
         //wrap - создание нового обработчика, который автоматически отправит обработанный обработчик в strand
@@ -35,37 +35,33 @@ namespace http {
         std::cout << my_string << std::endl;
     }
 
+
     void connection::handle_read(const boost::system::error_code& e, std::size_t bytes_transferred) {
         if (!e) {
             boost::tribool result;
             //tie создает кортеж с неконстантыми ссылками
             boost::tie(result, boost::tuples::ignore) = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_transferred);
 
-            std::string my_string(buffer_.data(), buffer_.data() + bytes_transferred);
-
-            setContent(my_string);
-            std::cout << getContent() << std::endl;
-
-            Controller controller;
-            controller.parseJSON(getContent());
-            // std::cout << "GET ID:" << controller.getID() << std::endl;
-            // std::cout << "TEXT IS: " << controller.returnText() << std::endl;
-
-
-            controller.bd.connectDB();
-            controller.bd.authorizeUser();
-
-            controller.bd.insertQuery("First note from telegram", const_cast<char*>(controller.returnText().c_str()), "");
-            std::string out;
-            out = controller.bd.selectAllQuery();
-            std::cout << "from bd with love: " << std::endl;
-            std::cout<<out;
-            std::cout<<controller.bd.selectByNameQuery("First note from telegram");
-
-
+            //print_buffer(bytes_transferred);
 
             if (result) {
-                request_handler_.handle_request(request_, reply_);
+
+                std::string my_string(buffer_.data(), buffer_.data() + bytes_transferred);
+                setContent(my_string);
+
+                Controller controller;
+                controller.parseJSON(getContent());
+
+                controller.bd.connectDB();
+                controller.bd.setID(controller.getID());
+                controller.bd.authorizeUser();
+
+                std::string answer;
+                /// логика бота в этом методе
+                controller.parseAndAnswer(reply_, clientsQueue, answer);
+
+                request_handler_.handle_request(request_, reply_, answer);
+
                 boost::asio::async_write(socket_, reply_.to_buffers(),
                                          strand_.wrap(boost::bind(&connection::handle_write, shared_from_this(),
                                                                   boost::asio::placeholders::error)));

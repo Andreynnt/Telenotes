@@ -7,18 +7,21 @@
 
 #include <QSqlDatabase>
 
-class DBConnector{
+class DBConnector {
 public:
-    DBConnector(int userid1 = 278);
+    DBConnector();
     ~DBConnector();
     bool connectDB();
     void authorizeUser();
-    void insertQuery(char* note_name, char* note_text, char* note_tags);
-    std::string selectByNameQuery(char* note_name);
+
+    void setID(const int id) { user_id = id; };
+    void insertQuery(const std::string& note_name, const std::string& note_text, const std::string& note_tags);
+    std::string selectByNameQuery(const std::string& note_name);
     std::string selectAllQuery();
+    void deleteByName(const std::string& note_name);
 
 private:
-    int user_id;
+    int user_id = 0;
     QSqlDatabase db_connector;
     bool checkConnection();
 };

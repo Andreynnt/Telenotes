@@ -11,6 +11,7 @@
 #include "../request/request_parser.hpp"
 
 #include "../controll/controller.hpp"
+#include "queue.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -25,7 +26,7 @@ namespace http {
     class connection : public boost::enable_shared_from_this<connection>, private boost::noncopyable {
 
     public:
-        explicit connection(boost::asio::io_service& io_service, request_handler& handler);
+        explicit connection(boost::asio::io_service& io_service, request_handler& handler, Queue& clientsQueue);
 
         /// Получение сокета, связанного с соединением
         boost::asio::ip::tcp::socket& socket();
@@ -69,6 +70,8 @@ namespace http {
         reply reply_;
 
         std::string content;
+
+        Queue& clientsQueue;
     };
 
     typedef boost::shared_ptr<connection> connection_ptr;

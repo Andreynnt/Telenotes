@@ -7,6 +7,7 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
+#include <iomanip>
 
 
 namespace http {
@@ -15,29 +16,29 @@ namespace http {
 
         }
 
-        void request_handler::handle_request(const request& req, reply& rep) {
-            // Декодинг пути к папке
-            std::string request_path;
-            request_path = "/index.html";
 
-            ///Сюда можно вставить парсинг входящей папки
-
-            // Открываем файл для отправки обатно
-            std::string full_path = doc_root_ + request_path;
-            std::ifstream is(full_path.c_str(), std::ios::in | std::ios::binary);
-            if (!is) {
-                //Папка не открыта
-                rep = reply::stock_reply(reply::not_found);
-                return;
-            }
+        void request_handler::handle_request(const request& req, reply& rep, const std::string& answer) {
 
             // Заполнение ответа для клиента
             rep.status = reply::ok;
-            char buf[512];
-            // Поблочное считывание
-            while (is.read(buf, sizeof(buf)).gcount() > 0) {
-                rep.content.append(buf, is.gcount());
-            }
+
+            std::string jsonContent = "{";
+            jsonContent += R"("method":"sendMessage","chat_id":")";
+            //std::string jsonContent="{\"method\":\"sendMessage\",\"chat_id\":\"";
+
+            jsonContent += std::to_string(rep.chatID);
+
+            std::stringstream newAnswer;
+            newAnswer << std::quoted(answer);
+
+            jsonContent += R"(","text":)";
+
+            jsonContent += newAnswer.str();
+            jsonContent += "}";
+
+            rep.content.append(jsonContent);
+
+            //std::cout << "rep.content = " << rep.content << std::endl;
 
             rep.headers.resize(2);
             rep.headers[0].name = "Content-Length";

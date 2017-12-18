@@ -1,98 +1,174 @@
 #include "controller.hpp"
 
+struct Command {
+    const char* command;
+} Commands[] =
+        {
+                {"/add"},
+                {"/delete"},
+                {"/show"},
+                {"/all"}
+        };
+
+
 //Проверка команды на правильность
-bool isValidCommand(std::string com) {
-    if(com == "/AddNote" || com == "/DeleteNote" || com == "/ShowAllNotes") {
-        return true;
+bool isValidCommand(const std::string& com) {
+    for (Command* i = Commands; i->command; i++) {
+        if (com == i->command) {
+            return true;
+        }
     }
     return false;
 }
 
-//Для DeleteNote - является ли строка числом(номером заметки)
-bool isNumber(std::string str) {
-    for(int i=0;str[i];i++) {
-        if(!(str[i]>='0' && str[i]<='9'))
-            return false;
-    }
-    return true;
-}
-
-std::string Message::getCommand() {
-    if(isValidCommand(command))return command;
-    return "None";
-}
 
 std::string Message::getText() {
-    assert(isFull());
     return text;
 }
 
-bool Message::setCommand(std::string com) {
+void Message::setText(const std::string& Text) {
+    text = Text;
+}
 
-    if(isValidCommand(com)) {
-        this->command = com;
-        this->waitingText = true;
-        if(com =="/ShowAllNotes") {
-            this->waitingText = false;
-            this->fullness = true;
+
+void Message::setTags(const std::string& Tags) {
+    tags = "";
+}
+
+void Message::setName(const std::string& text) {
+    std::stringstream  stream(text);
+
+    std::string  word, result;
+    for (int i = 0; i < 3; i++) {
+        stream >> word;
+        if (word.length()) {
+            word += " ";
         }
-        return true;
-    }
-    return false;
-}
-
-bool Message::isFull() {
-    return fullness;
-}
-
-bool Message::isWaitingText() {
-    return waitingText;
-}
-
-void Message::setText(std::string text) {
-    if(!(command=="/DeleteNote")||isNumber(text)) {
-        this->text = text;
-        this->fullness = true;
-        this->waitingText = false;
+        result += word;
+        word.clear();
     }
 
+    // удаляем последний пробел
+    result.pop_back();
+    name = result;
 }
 
-
+void Controller::setMessageName() {
+    textMessage.setName(textMessage.getText());
+}
 
 void Controller::parseJSON(const std::string& str) {
     json jsonToParse = json::parse(str);
 
-    std::string gotText = jsonToParse["message"]["text"];
     int id = jsonToParse["message"]["chat"]["id"];
     setID(id);
 
-    //Если флаг ожидания текста = false, значит была введена команда
-    //т.к изначально isWaitingText = false
-    if(!textMessage.isWaitingText()) {
-        textMessage.setCommand(gotText);
-    } else {
-        textMessage.setText(gotText);
+    std::string gotText;
+
+    try {
+        gotText = jsonToParse["message"]["text"];
+    } catch (nlohmann::json::exception& a){
+        gotText = "";
     }
 
+    textMessage.setText(gotText);
 }
 
-json Controller::reparseAnswer() {
-    json jsonAnswer;
-    jsonAnswer["chat_id"]=chatID;
-    if(textMessage.getCommand()=="/AddNote" && textMessage.isWaitingText()) {
-        jsonAnswer["text"]="Вы ввели команду /AddNote. Введите текст заметки";
-    }
-    if(textMessage.getCommand()=="/DeleteNote" && textMessage.isWaitingText()) {
-        jsonAnswer["text"]="Вы ввели команду /DeleteNote. Введите номер заметки";
-    }
-    if(textMessage.getCommand()=="None") {
-        jsonAnswer["text"]="Вы ввели неврную команду. Список доступных команд: /AddNote, /DeleteNote, /ShowAllNotes";
-    }
-    //Команда введена верно, текст/номер заметки введен
-    if(textMessage.isFull()) {
-        jsonAnswer["text"]="Выполнено успешно! "+textMessage.getText();
-    }
-    return jsonAnswer;
 
+
+bool Controller::messageIsCommand() {
+    std::string fullMessage = textMessage.getText();
+    if (fullMessage[0] == '/') {
+        return true;
+    }
+    return false;
+}
+
+bool Controller::messageIsValidCommand() {
+    for (Command* i = Commands; i->command; i++) {
+        if (textMessage.getText() == i->command) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+
+
+std::string Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer) {
+
+    reply_.chatID = chatID;
+
+    if (messageIsCommand()) {
+        // если пользователь отправил любое сообщение, которое начинается с '/'
+
+        if (messageIsValidCommand()) {
+            // если пользователь ввел команду из списка команд
+
+            std::string command = textMessage.getText();
+            int status = clientsQueue.getClientStatus(chatID);
+
+            switch (status) {
+                case newClient:
+                    if (command == "/all") {
+                        answer = bd.selectAllQuery();
+                    }  else {
+                        clientsQueue.addClient(chatID, command);
+                    }
+                    break;
+
+                case waitingForNewNote:
+                    answer = "Previous command was /add.\n Enter note";
+                    break;
+
+                case waitingToShowNote:
+                    answer = "Previous command was /show.\n Enter valid note's name";
+                    break;
+
+                case waitingForDelete:
+                    answer = "Previous command was /delete.\n Enter notes' name";
+                    break;
+
+            }
+        } else {
+            answer = "This command isn't valid.\nTry /add, /delete, /all, /show";
+        }
+
+    } else {
+
+        // если пользователь ввел текст
+        int status = clientsQueue.getClientStatus(chatID);
+        switch (status) {
+            case newClient:
+                // когда нам отправляют картинку, видео или стикер
+                if (textMessage.getText().empty()) {
+                    answer = "Oh, I can work only with text notes.";
+                } else {
+                    answer = "Oh, you should try command from this list: /add, /delete, /show, /all";
+                }
+                break;
+            case waitingForNewNote:
+                setMessageName();
+                bd.insertQuery(getName(), returnText(), getTags());
+                answer = "Got it!";
+                clientsQueue.deleteClient(getID());
+                break;
+            case waitingToShowNote:
+                /// надо  проверку сделать
+                answer = bd.selectByNameQuery(returnText());
+                clientsQueue.deleteClient(getID());
+                break;
+            case waitingForDelete:
+                /// надо  проверку сделать
+                setMessageName();
+                bd.deleteByName(getName());
+                clientsQueue.deleteClient(getID());
+                break;
+        }
+    }
+
+    return answer;
 };

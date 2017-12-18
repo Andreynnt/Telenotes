@@ -36,6 +36,8 @@ namespace http {
             /// Данные для ответа
             std::string content;
 
+            int chatID;
+
             std::string get_content();
 
             /// Преобразование ответа в вектор <buffers>
