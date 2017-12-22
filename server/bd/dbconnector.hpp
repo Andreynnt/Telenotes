@@ -18,7 +18,7 @@ public:
     void insertQuery(const std::string& note_name, const std::string& note_text, const std::string& note_tags);
     std::string selectByNameQuery(const std::string& note_name);
     std::string selectAllQuery();
-    void deleteByName(const std::string& note_name);
+    bool deleteByName(const std::string& note_name);
 
 private:
     int user_id = 0;

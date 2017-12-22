@@ -38,11 +38,12 @@ namespace http {
 
     void connection::handle_read(const boost::system::error_code& e, std::size_t bytes_transferred) {
         if (!e) {
+
+            //std::cout << "bytes trans = " << bytes_transferred << std::endl;
+
             boost::tribool result;
             //tie создает кортеж с неконстантыми ссылками
             boost::tie(result, boost::tuples::ignore) = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_transferred);
-
-            //print_buffer(bytes_transferred);
 
             if (result) {
 
@@ -51,13 +52,10 @@ namespace http {
 
                 Controller controller;
                 controller.parseJSON(getContent());
-
-                controller.bd.connectDB();
                 controller.bd.setID(controller.getID());
-                controller.bd.authorizeUser();
 
                 std::string answer;
-                /// логика бота в этом методе
+                // логика бота в этом методе
                 controller.parseAndAnswer(reply_, clientsQueue, answer);
 
                 request_handler_.handle_request(request_, reply_, answer);

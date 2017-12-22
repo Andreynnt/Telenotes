@@ -56,7 +56,7 @@ namespace http {
         request_handler& request_handler_;
 
         /// Buffer для входящих данных
-        boost::array<char, 8192> buffer_;
+        boost::array<char, 32768> buffer_;
 
         std::string print_buffer(std::size_t bytes_transferred);
 

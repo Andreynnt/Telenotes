@@ -42,17 +42,17 @@ public:
 
     void parseJSON(const std::string& str);
     int getID() { return chatID; }
-    std::string parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer);
+    void parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer);
 
     DBConnector bd;
 
 private:
 
-    void setMessageName();
+    void setMessageName(const std::string& text);
     bool messageIsCommand();
     bool messageIsValidCommand();
 
-    std::string returnText() { return  textMessage.getText(); }
+    std::string returnText() { return textMessage.getText(); }
     std::string getTags() { return textMessage.getTags(); }
     std::string getName() { return textMessage.getName(); }
 

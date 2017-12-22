@@ -10,7 +10,8 @@ enum {
     waitingForNewNote,
     waitingForDelete,
     waitingToShowNote,
-    waitingToShowAll
+    waitingToShowAll,
+    gotNameWaitingText
 };
 
 
@@ -23,6 +24,7 @@ public:
     int getClientStatus(int id);
     void addClient(int id, const std::string& command);
     void deleteClient(int id);
+    std::string getCommand(int chatID);
 };
 
 

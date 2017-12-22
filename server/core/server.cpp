@@ -12,6 +12,7 @@
 
 namespace http {
 
+
     server::server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size)
             : thread_pool_size_(thread_pool_size),
               signals_(io_service_),
@@ -73,5 +74,6 @@ namespace http {
     void server::handle_stop() {
         io_service_.stop();
     }
+
 }
 

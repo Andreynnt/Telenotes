@@ -24,6 +24,8 @@ int Queue::getClientStatus(int id) {
     if (client == "/delete") {
         return waitingForDelete;
     }
+
+    return gotNameWaitingText;
 }
 
 
@@ -34,4 +36,8 @@ void Queue::addClient(int id, const std::string& command) {
 
 void Queue::deleteClient(int id){
     clients.erase(id);
+}
+
+std::string  Queue::getCommand(int chatID) {
+    return clients[chatID];
 }

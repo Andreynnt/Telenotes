@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
         //инициализируем сервер
         std::size_t num_threads = boost::lexical_cast<std::size_t>(argv[3]);
         http::server s(argv[1], argv[2], argv[4], num_threads);
+        //http::server& ser =  http::server::getInstance(argv[1], argv[2], argv[4], num_threads);
 
         //запуск сервера
         s.run();

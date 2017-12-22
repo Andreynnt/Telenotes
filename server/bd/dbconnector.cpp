@@ -11,6 +11,9 @@
 #include <QSqlError>
 #include <QDate>
 #include <ostream>
+#include <iostream>
+
+#define MAX_NAME_SIZE 200
 
 void masterScript(){
     //Script for creating database.
@@ -46,7 +49,11 @@ DBConnector::DBConnector(){
 }
 
 DBConnector::~DBConnector(){
+    QString conn;
+    conn = db_connector.connectionName();
     db_connector.close();
+    db_connector = QSqlDatabase();
+    db_connector.removeDatabase(conn);
 }
 
 bool DBConnector::connectDB(){
@@ -126,22 +133,41 @@ std::string DBConnector::selectByNameQuery(const std::string& note_name) {
         );
         query.bindValue( ":name", note_name.c_str() );
         query.bindValue( ":userid", user_id );
+
         if( !query.exec() ){
             qDebug() <<"Select err"<<db_connector.lastError().text();
         }
-        while( query.next() ) {
+
+        bool noteInBd = false;
+        while (query.next()) {
             savedNote += "Note's name: ";
             savedNote += query.value(1).toString().toStdString();
             savedNote += "\n\nText:\n";
             savedNote += query.value(2).toString().toStdString();
             // savedNote += "\n TAGS: \n";
             // savedNote += query.value(3).toString().toStdString();
-            savedNote += "\n";
+            savedNote += "\n\n";
+            noteInBd = true;
+        }
+        if (!noteInBd) {
+            // заметки с таким именем не было
+            savedNote = R"(You haven't got a note with name: ")";
+            if (note_name.length() > MAX_NAME_SIZE) {
+                std::string shortName;
+                shortName.assign(note_name, 0, MAX_NAME_SIZE);
+                savedNote += shortName;
+                savedNote.append(R"(...")");
+            } else {
+                savedNote += note_name;
+                savedNote.append(R"(")");
+            }
+
         }
         return savedNote;
     }
-    else
+    else {
         return "\n";
+    }
 
 }
 
@@ -172,16 +198,23 @@ std::string DBConnector::selectAllQuery(){
 }
 
 
-void DBConnector::deleteByName(const std::string& note_name){
+bool DBConnector::deleteByName(const std::string& note_name){
     if(checkConnection()){
         QSqlQuery query(db_connector);
 
         query.prepare("DELETE FROM notes WHERE note_name = :note_name");
         query.bindValue( ":note_name", note_name.c_str());
 
-        if( !query.exec() ){
+        if (!query.exec()) {
             qDebug() <<"Delete error"<<query.lastError().text();
+            return false;
         }
 
+        if (!query.numRowsAffected()) {
+            return false;
+        }
+
+        return true;
     }
+    return false;
 }

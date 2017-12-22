@@ -7,7 +7,8 @@ struct Command {
                 {"/add"},
                 {"/delete"},
                 {"/show"},
-                {"/all"}
+                {"/all"},
+                {"/start"}
         };
 
 
@@ -36,34 +37,21 @@ void Message::setTags(const std::string& Tags) {
 }
 
 void Message::setName(const std::string& text) {
-    std::stringstream  stream(text);
-
-    std::string  word, result;
-    for (int i = 0; i < 3; i++) {
-        stream >> word;
-        if (word.length()) {
-            word += " ";
-        }
-        result += word;
-        word.clear();
-    }
-
-    // удаляем последний пробел
-    result.pop_back();
-    name = result;
+    name = text;
 }
 
-void Controller::setMessageName() {
-    textMessage.setName(textMessage.getText());
+void Controller::setMessageName(const std::string& text) {
+    textMessage.setName(text);
 }
 
 void Controller::parseJSON(const std::string& str) {
+
+    std::string gotText;
+
     json jsonToParse = json::parse(str);
 
     int id = jsonToParse["message"]["chat"]["id"];
     setID(id);
-
-    std::string gotText;
 
     try {
         gotText = jsonToParse["message"]["text"];
@@ -98,45 +86,51 @@ bool Controller::messageIsValidCommand() {
 
 
 
-std::string Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer) {
+void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer) {
 
     reply_.chatID = chatID;
 
+    if (textMessage.getText().empty()) {
+        answer = "Oh, I can work only with text notes.";
+        clientsQueue.deleteClient(chatID);
+        return;
+    }
+
     if (messageIsCommand()) {
+
         // если пользователь отправил любое сообщение, которое начинается с '/'
-
-        if (messageIsValidCommand()) {
-            // если пользователь ввел команду из списка команд
-
-            std::string command = textMessage.getText();
-            int status = clientsQueue.getClientStatus(chatID);
-
-            switch (status) {
-                case newClient:
-                    if (command == "/all") {
-                        answer = bd.selectAllQuery();
-                    }  else {
-                        clientsQueue.addClient(chatID, command);
-                    }
-                    break;
-
-                case waitingForNewNote:
-                    answer = "Previous command was /add.\n Enter note";
-                    break;
-
-                case waitingToShowNote:
-                    answer = "Previous command was /show.\n Enter valid note's name";
-                    break;
-
-                case waitingForDelete:
-                    answer = "Previous command was /delete.\n Enter notes' name";
-                    break;
-
-            }
-        } else {
+        if (!messageIsValidCommand()) {
             answer = "This command isn't valid.\nTry /add, /delete, /all, /show";
+            return;
         }
 
+        // если пользователь ввел команду из списка команд
+        std::string command = textMessage.getText();
+        int status = clientsQueue.getClientStatus(chatID);
+
+        if (status == newClient) {
+            if (command == "/all") {
+                bd.connectDB();
+                answer = bd.selectAllQuery();
+            }  else if (command == "/start") {
+                answer = "Welcome to Telenotes bot! Here you can create, delete and watch your text notes.";
+            } else {
+                clientsQueue.addClient(chatID, command);
+                if (command == "/add") {
+                    answer = "Enter note's name";
+                    return;
+                }
+                answer = "Enter note's name";
+            }
+        } else if (status == waitingForDelete){
+            answer = "Previous command was /delete.\n Enter note's name";
+        } else if (status == waitingToShowNote) {
+            answer = "Previous command was /show.\n Enter note's name";
+        } else if (status == gotNameWaitingText){
+            answer = "Previous command was /add.\n Enter note's text";
+        } else {
+            answer = "Previous command was /add.\n Enter note's name";
+        }
     } else {
 
         // если пользователь ввел текст
@@ -144,31 +138,39 @@ std::string Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue,
         switch (status) {
             case newClient:
                 // когда нам отправляют картинку, видео или стикер
-                if (textMessage.getText().empty()) {
-                    answer = "Oh, I can work only with text notes.";
-                } else {
-                    answer = "Oh, you should try command from this list: /add, /delete, /show, /all";
-                }
+                answer = "Oh, you should try command from this list: /add, /delete, /show, /all";
                 break;
             case waitingForNewNote:
-                setMessageName();
-                bd.insertQuery(getName(), returnText(), getTags());
-                answer = "Got it!";
-                clientsQueue.deleteClient(getID());
+                clientsQueue.addClient(chatID, textMessage.getText());
+                answer = "Now enter note";
                 break;
+
+            case gotNameWaitingText:
+                bd.connectDB();
+                bd.insertQuery(clientsQueue.getCommand(chatID), returnText(), getTags());
+                answer = "Got it!";
+                clientsQueue.deleteClient(chatID);
+                break;
+
             case waitingToShowNote:
-                /// надо  проверку сделать
+                bd.connectDB();
                 answer = bd.selectByNameQuery(returnText());
-                clientsQueue.deleteClient(getID());
+                clientsQueue.deleteClient(chatID);
                 break;
             case waitingForDelete:
-                /// надо  проверку сделать
-                setMessageName();
-                bd.deleteByName(getName());
-                clientsQueue.deleteClient(getID());
+                bd.connectDB();
+
+            std::string name = textMessage.getText();
+                if (!bd.deleteByName(name)) {
+                    answer = R"(You haven't got a note with name ")";
+                    answer += name;
+                    answer.append(R"(")");
+                } else {
+                    answer = R"(Deleted!)";
+                }
+                clientsQueue.deleteClient(chatID);
                 break;
         }
     }
 
-    return answer;
 };

@@ -18,16 +18,22 @@
 
 namespace http {
 
+
     class server {
 
     public:
         ///Коснструктор, настраиваем на прослушивание тсп адреса и порта
         ///и отдачу файлов из заданной директории
+        // explicit server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size);
+
         explicit server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size);
+
+
 
         void run();
 
     private:
+
         /// Инициируем операцию асинхронного приема
         void start_accept();
 
