@@ -1,8 +1,6 @@
 
 #include "../request/request_handler.hpp"
 #include "connection.hpp"
-#include <iostream>
-#include <vector>
 #include <boost/bind.hpp>
 
 namespace http {
@@ -21,7 +19,8 @@ namespace http {
     }
 
 
-    void connection::start() {
+    void connection::start(int id) {
+        connection_id = id;
         //wrap - создание нового обработчика, который автоматически отправит обработанный обработчик в strand
         socket_.async_read_some(boost::asio::buffer(buffer_), strand_.wrap(
                 boost::bind(&connection::handle_read, shared_from_this(),
@@ -39,8 +38,6 @@ namespace http {
     void connection::handle_read(const boost::system::error_code& e, std::size_t bytes_transferred) {
         if (!e) {
 
-            //std::cout << "bytes trans = " << bytes_transferred << std::endl;
-
             boost::tribool result;
             //tie создает кортеж с неконстантыми ссылками
             boost::tie(result, boost::tuples::ignore) = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_transferred);
@@ -51,12 +48,19 @@ namespace http {
                 setContent(my_string);
 
                 Controller controller;
-                controller.parseJSON(getContent());
-                controller.bd.setID(controller.getID());
 
-                std::string answer;
-                // логика бота в этом методе
-                controller.parseAndAnswer(reply_, clientsQueue, answer);
+                bool validRequest = controller.parseJSON(getContent(), connection_id);
+                if (!validRequest) {
+                    reply_ = reply::stock_reply(reply::no_content);
+                    reply_ = reply::stock_reply(reply::bad_request);
+                    boost::asio::async_write(socket_, reply_.to_buffers(),
+                                             strand_.wrap(
+                                                     boost::bind(&connection::handle_write, shared_from_this(),
+                                                                 boost::asio::placeholders::error)));
+                    return;
+                }
+
+                std::string answer = controller.parseAndAnswer(reply_, clientsQueue);
 
                 request_handler_.handle_request(request_, reply_, answer);
 
@@ -102,6 +106,10 @@ namespace http {
 
     void connection::setContent(const std::string& str) {
         size_t pos = str.find('{');
+        if (pos == std::string::npos) {
+            content = "";
+            return;
+        }
         content = str.substr(pos, std::string::npos);
     }
 

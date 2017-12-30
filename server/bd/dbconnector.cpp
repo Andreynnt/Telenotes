@@ -1,52 +1,20 @@
-//
-// Created by andreynt on 09.12.17.
-//
-
 
 #include "dbconnector.hpp"
 #include <QDebug>
-#include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QSqlError>
 #include <QDate>
-#include <ostream>
 #include <iostream>
 
 #define MAX_NAME_SIZE 200
 
-void masterScript(){
-    //Script for creating database.
-    //Making DB on localhost
-    //Server should contain:
-    //-PostgreSQL Server.
-    //-Postgres master user with name 'host1' and password 'host1'
-    //Postgres DB named 'mydb'
-    QSqlDatabase connector = QSqlDatabase::addDatabase("QPSQL");
-
-    connector.setHostName("localhost");
-    connector.setDatabaseName("mydb");
-    connector.setUserName("host1");
-    connector.setPassword("host1");
-
-    if( !connector.open() ) {
-        qDebug() <<"conn error"<< connector.lastError().text();
-    }
-    else{
-        QSqlQuery query(connector);
-        if(!query.exec("CREATE TABLE users( user_id int primary key);"))
-            qDebug() <<"conn error"<< connector.lastError().text();
-        if(!query.exec("CREATE TABLE notes(user_id int references users,note_name text,note_text text,note_tags text,note_date date);"))
-            qDebug() <<"conn error"<< connector.lastError().text();
-    }
-    connector.close();
-
-}
 
 DBConnector::DBConnector(){
     QSqlDatabase newConnector;
     db_connector = newConnector;
 }
+
 
 DBConnector::~DBConnector(){
     QString conn;
@@ -56,13 +24,15 @@ DBConnector::~DBConnector(){
     db_connector.removeDatabase(conn);
 }
 
-bool DBConnector::connectDB(){
-    db_connector = QSqlDatabase::addDatabase("QPSQL");
 
-    db_connector.setHostName("localhost");
-    db_connector.setDatabaseName("telenotesdb");
-    db_connector.setUserName("host1");
-    db_connector.setPassword("host1");
+bool DBConnector::connectDB(){
+    std::string id = std::to_string(message_id);
+    db_connector = QSqlDatabase::addDatabase("QPSQL", id.c_str());
+
+    db_connector.setHostName((config->getHostName()).c_str());
+    db_connector.setDatabaseName((config->getDataBaseName()).c_str());
+    db_connector.setUserName((config->getUserName()).c_str());
+    db_connector.setPassword((config->getPassword()).c_str());
 
     if( !db_connector.open() ) {
         qDebug() <<"connection error"<< db_connector.lastError().text();
@@ -70,6 +40,7 @@ bool DBConnector::connectDB(){
     }
     return true;
 }
+
 
 void DBConnector::authorizeUser() {
     if(checkConnection()) {
@@ -93,6 +64,7 @@ void DBConnector::authorizeUser() {
     }
 }
 
+
 bool DBConnector::checkConnection(){//checking the connection. If smth is wrong trying to reconnect.
     if(!db_connector.isOpen()){
         if(!connectDB()){
@@ -104,24 +76,24 @@ bool DBConnector::checkConnection(){//checking the connection. If smth is wrong 
     return true;
 }
 
-void DBConnector::insertQuery(const std::string& note_name, const std::string& note_text, const std::string& note_tags) {
+
+void DBConnector::insertQuery(const std::string& note_name, const std::string& note_text) {
     if(checkConnection()) {
         QSqlQuery query(db_connector);
         QDate date = QDate::currentDate();
 
-        query.prepare("INSERT INTO notes VALUES(:usrid, :name, :note, :tags, :date);");
+        query.prepare("INSERT INTO notes VALUES(:usrid, :name, :note, :date);");
         query.bindValue( ":usrid", user_id );
         query.bindValue( ":name", note_name.c_str());
         query.bindValue( ":note", note_text.c_str());
-
-
-        query.bindValue( ":tags", note_tags.c_str());
         query.bindValue(":date",date);
+
         if( !query.exec() ){
             qDebug() <<"Insert error"<<query.lastError().text();
         }
     }
 }
+
 
 std::string DBConnector::selectByNameQuery(const std::string& note_name) {
     if (checkConnection()){
@@ -144,8 +116,6 @@ std::string DBConnector::selectByNameQuery(const std::string& note_name) {
             savedNote += query.value(1).toString().toStdString();
             savedNote += "\n\nText:\n";
             savedNote += query.value(2).toString().toStdString();
-            // savedNote += "\n TAGS: \n";
-            // savedNote += query.value(3).toString().toStdString();
             savedNote += "\n\n";
             noteInBd = true;
         }
@@ -170,6 +140,7 @@ std::string DBConnector::selectByNameQuery(const std::string& note_name) {
     }
 
 }
+
 
 std::string DBConnector::selectAllQuery(){
     if(checkConnection()){

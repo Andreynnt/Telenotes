@@ -9,6 +9,7 @@
 #include "connection.hpp"
 #include "../request/request_handler.hpp"
 #include "queue.hpp"
+#include "../config_reader/conf_reader.hpp"
 #include <boost/asio.hpp>
 #include <string>
 #include <vector>
@@ -18,17 +19,13 @@
 
 namespace http {
 
-
     class server {
 
     public:
         ///Коснструктор, настраиваем на прослушивание тсп адреса и порта
         ///и отдачу файлов из заданной директории
-        // explicit server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size);
 
-        explicit server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size);
-
-
+        explicit server(const std::string& address, int port, std::size_t thread_pool_size);
 
         void run();
 
@@ -60,6 +57,8 @@ namespace http {
 
         /// Обработчик входящих запросов
         request_handler request_handler_;
+
+        int connection_id = 0;
 
         Queue clientsQueue;
 

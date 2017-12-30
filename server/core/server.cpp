@@ -12,13 +12,12 @@
 
 namespace http {
 
-
-    server::server(const std::string& address, const std::string& port, const std::string& doc_root, std::size_t thread_pool_size)
+    server::server(const std::string& address, int port, std::size_t thread_pool_size)
             : thread_pool_size_(thread_pool_size),
               signals_(io_service_),
               acceptor_(io_service_),
-              new_connection_(),
-              request_handler_(doc_root)
+              new_connection_()
+
     {
 
         //Сигналы SIGTERM (завершить программу), SIGINT (прерывание сигнала),  SIGQUIT (сигнал, для остановки процесса пользователем)
@@ -30,7 +29,7 @@ namespace http {
         //resolver нужен для того, чтобы преобразововывать человекочитаемый формат в
         //в endpoint, например 127.0.0.1 в 0x7F000001.
         boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(address, port);
+        boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
         //Делаем "конечную точку", которую можно привязать к конкретному сокету
         boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 
@@ -65,7 +64,9 @@ namespace http {
     /// Обработчик, вызываемый при завершении операции accept
     void server::handle_accept(const boost::system::error_code& e) {
         if (!e) {
-            new_connection_->start();
+            /// уникальный id для каждого соединения
+            new_connection_->start(connection_id);
+            connection_id++;
         }
 
         start_accept();

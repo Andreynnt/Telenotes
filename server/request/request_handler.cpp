@@ -12,11 +12,6 @@
 
 namespace http {
 
-        request_handler::request_handler(const std::string& doc_root) : doc_root_(doc_root) {
-
-        }
-
-
         void request_handler::handle_request(const request& req, reply& rep, const std::string& answer) {
 
             // Заполнение ответа для клиента
@@ -24,7 +19,6 @@ namespace http {
 
             std::string jsonContent = "{";
             jsonContent += R"("method":"sendMessage","chat_id":")";
-            //std::string jsonContent="{\"method\":\"sendMessage\",\"chat_id\":\"";
 
             jsonContent += std::to_string(rep.chatID);
 
@@ -37,8 +31,6 @@ namespace http {
             jsonContent += "}";
 
             rep.content.append(jsonContent);
-
-            //std::cout << "rep.content = " << rep.content << std::endl;
 
             rep.headers.resize(2);
             rep.headers[0].name = "Content-Length";

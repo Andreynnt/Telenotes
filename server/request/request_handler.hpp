@@ -12,14 +12,11 @@ namespace http {
         class request_handler : private boost::noncopyable {
         public:
 
-            explicit request_handler(const std::string& doc_root);
+            explicit request_handler() = default;
 
             /// Обрабатка запроса и отдача ответа
             void handle_request(const request& req, reply& rep, const std::string& answer);
 
-        private:
-            /// Дирректория с файлами для отдачи
-            std::string doc_root_;
         };
 }
 

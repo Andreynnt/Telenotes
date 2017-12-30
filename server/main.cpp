@@ -1,29 +1,24 @@
 #include "core/server.hpp"
-#include <cstdlib>
-#include <iostream>
-#include <boost/bind.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
-int main(int argc, char* argv[]) {
+
+
+int main() {
+
+    /// чтение конфига сервера из xml файла
+    serverConfig serverConf;
+    serverConf.readConfigFile("../config/server");
+
+    /// чтение конфига базы данных из xml файла
+    databaseConfig databaseConf;
+    databaseConf.readConfigFile("../config/database");
+
     try {
-        if (argc != 5) {
-            std::cerr << "Usage: <address> <port> <threads> <doc_root>\n";
-            std::cerr << "  For IPV4, try:\n";
-            return 1;
-        }
-
-        //инициализируем сервер
-        std::size_t num_threads = boost::lexical_cast<std::size_t>(argv[3]);
-        http::server s(argv[1], argv[2], argv[4], num_threads);
-        //http::server& ser =  http::server::getInstance(argv[1], argv[2], argv[4], num_threads);
-
-        //запуск сервера
+        http::server s(serverConf.getAddress(), serverConf.getPort(), serverConf.getThreads());
         s.run();
-
-    } catch (std::exception& e) {
-        std::cerr << "exception: " << e.what() << "\n";
+    } catch (std::exception& e){
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;

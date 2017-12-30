@@ -12,6 +12,7 @@
 
 #include "../controll/controller.hpp"
 #include "queue.hpp"
+#include "../config_reader/conf_reader.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -31,9 +32,8 @@ namespace http {
         /// Получение сокета, связанного с соединением
         boost::asio::ip::tcp::socket& socket();
 
-
         /// Запуск асинхронной операции соедиения
-        void start();
+        void start(int id);
         std::string getContent();
 
     private:
@@ -72,6 +72,10 @@ namespace http {
         std::string content;
 
         Queue& clientsQueue;
+
+        const databaseConfig* dbConfig;
+
+        int connection_id = 0;
     };
 
     typedef boost::shared_ptr<connection> connection_ptr;

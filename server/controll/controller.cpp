@@ -23,43 +23,30 @@ bool isValidCommand(const std::string& com) {
 }
 
 
-std::string Message::getText() {
-    return text;
-}
-
-void Message::setText(const std::string& Text) {
-    text = Text;
-}
-
-
-void Message::setTags(const std::string& Tags) {
-    tags = "";
-}
-
-void Message::setName(const std::string& text) {
-    name = text;
-}
-
-void Controller::setMessageName(const std::string& text) {
-    textMessage.setName(text);
-}
-
-void Controller::parseJSON(const std::string& str) {
+bool Controller::parseJSON(const std::string& str, int connection_id) {
 
     std::string gotText;
-
-    json jsonToParse = json::parse(str);
-
-    int id = jsonToParse["message"]["chat"]["id"];
-    setID(id);
+    json jsonToParse;
 
     try {
+        jsonToParse = json::parse(str);
+    } catch (nlohmann::json::exception& error) {
+        return false;
+    }
+
+    try {
+        chatID = jsonToParse["message"]["chat"]["id"];
+        message_id = jsonToParse["message"]["message_id"];
         gotText = jsonToParse["message"]["text"];
     } catch (nlohmann::json::exception& a){
-        gotText = "";
+        return false;
     }
 
     textMessage.setText(gotText);
+
+    bd.setMessageID(connection_id);
+    bd.setID(chatID);
+    return true;
 }
 
 
@@ -72,6 +59,7 @@ bool Controller::messageIsCommand() {
     return false;
 }
 
+
 bool Controller::messageIsValidCommand() {
     for (Command* i = Commands; i->command; i++) {
         if (textMessage.getText() == i->command) {
@@ -82,18 +70,16 @@ bool Controller::messageIsValidCommand() {
 }
 
 
-
-
-
-
-void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer) {
+std::string Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue) {
 
     reply_.chatID = chatID;
+
+    std::string answer;
 
     if (textMessage.getText().empty()) {
         answer = "Oh, I can work only with text notes.";
         clientsQueue.deleteClient(chatID);
-        return;
+        return answer;
     }
 
     if (messageIsCommand()) {
@@ -101,7 +87,7 @@ void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::s
         // если пользователь отправил любое сообщение, которое начинается с '/'
         if (!messageIsValidCommand()) {
             answer = "This command isn't valid.\nTry /add, /delete, /all, /show";
-            return;
+            return answer;
         }
 
         // если пользователь ввел команду из списка команд
@@ -118,7 +104,7 @@ void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::s
                 clientsQueue.addClient(chatID, command);
                 if (command == "/add") {
                     answer = "Enter note's name";
-                    return;
+                    return answer;
                 }
                 answer = "Enter note's name";
             }
@@ -147,7 +133,8 @@ void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::s
 
             case gotNameWaitingText:
                 bd.connectDB();
-                bd.insertQuery(clientsQueue.getCommand(chatID), returnText(), getTags());
+                bd.authorizeUser();
+                bd.insertQuery(clientsQueue.getCommand(chatID), returnText());
                 answer = "Got it!";
                 clientsQueue.deleteClient(chatID);
                 break;
@@ -173,4 +160,5 @@ void Controller::parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::s
         }
     }
 
+    return answer;
 };

@@ -14,23 +14,17 @@ using json = nlohmann::json;
 class Message {
 public:
 
-    //Текст заметки для команды  /AddNote или аргумент команды /DeleteNote
-    void setText(const std::string& text);
-    void setName(const std::string& text);
-    void setTags(const std::string& tags);
+    void setText(const std::string& Text) {text = Text; };
+    void setName(const std::string& Name) {name = Name; };
 
-    std::string getText();
+    std::string getText() { return text; };
     std::string getName() { return name; }
-    std::string getTags() { return tags; }
 
 private:
     //Текст заметки/ номер заметки
     std::string text;
     std::string name;
-    std::string tags;
-
 };
-
 
 
 
@@ -40,26 +34,20 @@ class Controller {
 public:
     explicit Controller() = default;
 
-    void parseJSON(const std::string& str);
-    int getID() { return chatID; }
-    void parseAndAnswer(http::reply& reply_, Queue& clientsQueue, std::string& answer);
-
-    DBConnector bd;
+    bool parseJSON(const std::string& str, int connection_id);
+    std::string parseAndAnswer(http::reply& reply_, Queue& clientsQueue);
 
 private:
 
-    void setMessageName(const std::string& text);
+    DBConnector bd;
     bool messageIsCommand();
     bool messageIsValidCommand();
-
     std::string returnText() { return textMessage.getText(); }
-    std::string getTags() { return textMessage.getTags(); }
     std::string getName() { return textMessage.getName(); }
 
     int chatID = 0;
+    int message_id = 0;
     Message textMessage;
-
-    void setID(int id = 0) { chatID = id; }
 };
 
 
